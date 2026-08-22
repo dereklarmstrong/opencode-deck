@@ -93,3 +93,7 @@ git tag v0.1.0
 `publish.sh` refuses to run if the tagged tree contains private keys, provider
 tokens, or forbidden files (`.env`, `*.pem`, `*.key`). GitHub only ever sees
 the exact tagged tree — dev history never crosses the wire.
+
+Inbound: issues and PRs are welcome here (see `CONTRIBUTING.md`). PRs are
+pulled down, reviewed with the test suite, and shipped as tags — PRs are
+never merged directly into `main`.

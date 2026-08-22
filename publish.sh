@@ -19,15 +19,17 @@ set -euo pipefail
 
 TAG=""
 DRY_RUN=0
+NOTE=""
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
+    --note=*) NOTE="${arg#--note=}" ;;
     -h|--help)
-      echo "usage: $(basename "$0") <tag e.g. v0.1.0> [--dry-run]"; exit 0 ;;
+      echo "usage: $(basename "$0") <tag e.g. v0.1.0> [--note='gh#12 — @user'] [--dry-run]"; exit 0 ;;
     *) TAG="$arg" ;;
   esac
 done
-[ -n "$TAG" ] || { echo "usage: $(basename "$0") <tag e.g. v0.1.0> [--dry-run]" >&2; exit 2; }
+[ -n "$TAG" ] || { echo "usage: $(basename "$0") <tag e.g. v0.1.0> [--note=...] [--dry-run]" >&2; exit 2; }
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 GH_DEST="ssh://git@github.com/dereklarmstrong/opencode-deck.git"
@@ -93,7 +95,7 @@ git -C "$SNAP" init -q -b main
 git -C "$SNAP" config user.name  "opencode-deck publish"
 git -C "$SNAP" config user.email "publish@opencode-deck"
 git -C "$SNAP" add -A
-git -C "$SNAP" commit -qm "$TAG — published from $SHA"
+git -C "$SNAP" commit -qm "$TAG — published from $SHA${NOTE:+ | $NOTE}"
 
 [ -f "$KEY" ] || { echo "missing deploy key: $KEY" >&2; exit 2; }
 chmod 600 "$KEY"
