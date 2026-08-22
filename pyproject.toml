@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opencode-deck"
+version = "0.1.0"
+description = "Read-only local dashboard over opencode.db — agents, models, tools, tokens, context health, insights. No hooks, no proxy, no SaaS."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Derek Armstrong" }]
+keywords = ["opencode", "dashboard", "analytics", "llm", "coding-agent"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Topic :: Utilities",
+]
+
+[project.scripts]
+opencode-deck = "opencode_deck.server:main"
+
+[tool.setuptools]
+packages = ["opencode_deck"]
+
+[tool.setuptools.package-data]
+opencode_deck = ["static/*"]
