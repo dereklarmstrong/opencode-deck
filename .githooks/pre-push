@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# Local pre-push gate: every push runs the unit tests + the secret/forbidden-
+# file gate against HEAD before it leaves the machine. Runner-independent —
+# this is what protects main on days when no Actions runner is online.
+#
+# Enable once per clone:
+#   git config core.hooksPath .githooks
+#
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+echo "== pre-push: unit tests =="
+python3 -m unittest discover -s tests -q
+
+echo "== pre-push: gate (HEAD tree) =="
+bash publish.sh --gate HEAD

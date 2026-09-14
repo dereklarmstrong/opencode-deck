@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>opencode deck</title>
+<script src="/chart.umd.min.js"></script>
+<style>
+  /* ---- themes: 24 vars each. 11 UI + 12 chart slots (--c0..--c11) + --heat-alpha-min ----
+     --c0..--c4 are a logical copy of accent/accent2/purple/warn/err per theme.
+     :root below is the no-attribute fallback (pre-JS first paint); dark block mirrors it. */
+  :root {
+    --bg: #0b0f14; --panel: #11161d; --panel2: #161d26; --line: #5a6880;
+    --fg: #d7e0ea; --dim: #8b98a5; --accent: #7ee787; --accent2: #79c0ff;
+    --warn: #f2cc60; --err: #ff7b72; --purple: #d2a8ff;
+    --c0: #7ee787; --c1: #79c0ff; --c2: #d2a8ff; --c3: #f2cc60; --c4: #ff7b72;
+    --c5: #56d364; --c6: #a5d6ff; --c7: #f0bf86; --c8: #e3b341; --c9: #ff8bab;
+    --c10: #8bd4b5; --c11: #b392f0;
+    --heat-alpha-min: 0.5;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0f14; --panel: #11161d; --panel2: #161d26; --line: #5a6880;
+    --fg: #d7e0ea; --dim: #8b98a5; --accent: #7ee787; --accent2: #79c0ff;
+    --warn: #f2cc60; --err: #ff7b72; --purple: #d2a8ff;
+    --c0: #7ee787; --c1: #79c0ff; --c2: #d2a8ff; --c3: #f2cc60; --c4: #ff7b72;
+    --c5: #56d364; --c6: #a5d6ff; --c7: #f0bf86; --c8: #e3b341; --c9: #ff8bab;
+    --c10: #8bd4b5; --c11: #b392f0;
+    --heat-alpha-min: 0.5; /* raised from 0.12: 3:1 non-text gate on faintest heat cell (sRGB compositing) */
+  }
+  :root[data-theme="light"] {
+    --bg: #f6f8fa; --panel: #ffffff; --panel2: #f6f8fa; --line: #8593a6;
+    --fg: #1f2328; --dim: #57606a; --accent: #1a7f37; --accent2: #0969da;
+    --warn: #9a6700; --err: #cf222e; --purple: #8250df;
+    --c0: #1a7f37; --c1: #0969da; --c2: #8250df; --c3: #9a6700; --c4: #cf222e;
+    --c5: #218838; --c6: #0550ae; --c7: #6639ba; --c8: #7d4e00; --c9: #cb356d;
+    --c10: #57606a; --c11: #8250df;
+    --heat-alpha-min: 0.85; /* over a light panel the floor must be near-solid to hold 3:1 */
+  }
+  :root[data-theme="nord"] {
+    --bg: #2e3440; --panel: #3b4252; --panel2: #434c5e; --line: #8593ab;
+    --fg: #eceff4; --dim: #bac4d4; --accent: #93c9da; --accent2: #aec598;
+    --warn: #ebcb8b; --err: #f2adb5; --purple: #d9b6d4;
+    --c0: #93c9da; --c1: #aec598; --c2: #d9b6d4; --c3: #ebcb8b; --c4: #f2adb5;
+    --c5: #9cc7c5; --c6: #a5c3de; --c7: #d8dee9; --c8: #ebcb8b; --c9: #d9b6d4;
+    --c10: #93c9da; --c11: #aec598;
+    --heat-alpha-min: 0.72;
+  }
+  :root[data-theme="dracula"] {
+    --bg: #282a36; --panel: #2c2f3e; --panel2: #44475a; --line: #6e7faa;
+    --fg: #f8f8f2; --dim: #b1bad8; --accent: #d4b2fc; --accent2: #8be9fd;
+    --warn: #f1fa8c; --err: #ffa2a2; --purple: #ff9cda;
+    --c0: #d4b2fc; --c1: #8be9fd; --c2: #ff9cda; --c3: #f1fa8c; --c4: #ffa2a2;
+    --c5: #50fa7b; --c6: #8a99d8; --c7: #bd93f9; --c8: #ff79c6; --c9: #f1fa8c;
+    --c10: #8be9fd; --c11: #ffa2a2;
+    --heat-alpha-min: 0.72;
+  }
+  :root[data-theme="everforest"] {
+    --bg: #2d3540; --panel: #323c47; --panel2: #414b56; --line: #7c8b9d;
+    --fg: #d3d7cf; --dim: #b7c4bd; --accent: #adcb86; --accent2: #93cbd3;
+    --warn: #e5c07b; --err: #f0a8ab; --purple: #e0b0e2;
+    --c0: #adcb86; --c1: #93cbd3; --c2: #e0b0e2; --c3: #e5c07b; --c4: #f0a8ab;
+    --c5: #9ed681; --c6: #7dcbba; --c7: #d699d6; --c8: #e5c07b; --c9: #74b7c4;
+    --c10: #e0b0e2; --c11: #f0a8ab;
+    --heat-alpha-min: 0.72;
+  }
+  :root[data-theme="everforest-light"] {
+    --bg: #f1f3f2; --panel: #ffffff; --panel2: #e9ece7; --line: #7e8a84;
+    --fg: #323232; --dim: #5b6e66; --accent: #28742b; --accent2: #1f6fa8;
+    --warn: #8a6100; --err: #c62828; --purple: #6a3fb5;
+    --c0: #28742b; --c1: #1f6fa8; --c2: #6a3fb5; --c3: #8a6100; --c4: #c62828;
+    --c5: #388e3c; --c6: #1565c0; --c7: #8e44ad; --c8: #b26a00; --c9: #ad1457;
+    --c10: #00695c; --c11: #512da8;
+    --heat-alpha-min: 0.85;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 14px/1.45 ui-monospace, "JetBrains Mono", "Fira Code", Consolas, monospace; }
+  header { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 92%, transparent);
+           backdrop-filter: blur(6px); border-bottom: 1px solid var(--line);
+           display: flex; align-items: center; gap: 14px; padding: 10px 20px; }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: .06em; }
+  header h1 .b { color: var(--accent); }
+  header .meta { color: var(--dim); font-size: 12px; }
+  header .spacer { flex: 1; }
+   header { flex-wrap: wrap; }
+   header .range { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+   header .range button { padding: 4px 9px; font-size: 12px; color: var(--dim); }
+   header .range button.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+   header .range input[type="date"] { background: var(--panel2); color: var(--fg); border: 1px solid var(--line);
+            border-radius: 6px; padding: 3px 6px; font: inherit; font-size: 12px; color-scheme: dark; }
+  :root[data-theme="light"] .range input[type="date"],
+  :root[data-theme="everforest-light"] .range input[type="date"] { color-scheme: light; }
+   header .range input[type="date"]:disabled { opacity: .35; }
+   header .range .dimsep { color: var(--dim); font-size: 12px; }
+  button { background: var(--panel2); color: var(--accent); border: 1px solid var(--line);
+           border-radius: 6px; padding: 5px 12px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  main { max-width: 1280px; margin: 0 auto; padding: 18px 20px 60px; }
+  section { margin-top: 26px; }
+  section > h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .14em;
+                 color: var(--dim); margin: 0 0 12px; }
+  section > h2::before { content: "▸ "; color: var(--accent); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .kpi .v { font-size: 22px; font-weight: 700; color: var(--fg); }
+  .kpi .v small { font-size: 12px; color: var(--dim); font-weight: 400; }
+  .kpi .l { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; margin-top: 3px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 900px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  .card h3 { margin: 0 0 2px; font-size: 13px; color: var(--fg); }
+  .card .so { color: var(--dim); font-size: 12px; margin-bottom: 10px; }
+  .chart-wrap { position: relative; height: 240px; }
+  .chart-wrap.tall { height: 280px; }
+  ul.insights { list-style: none; margin: 0; padding: 0; }
+  ul.insights li { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+                   border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; color: var(--dim); font-weight: 400; text-transform: uppercase;
+       font-size: 10.5px; letter-spacing: .08em; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th.sortable { cursor: pointer; }
+  th.sortable:hover { color: var(--fg); }
+  th .sind { color: var(--accent); font-size: 9px; margin-left: 3px; }
+   td { padding: 6px 8px; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); white-space: nowrap; }
+   td.num, th.num { text-align: right; }
+   .tscroll { overflow-x: auto; }
+   .grid2 > *, .grid3 > * { min-width: 0; }
+  tr:hover td { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+  select { background: var(--panel2); color: var(--accent); border: 1px solid var(--line);
+           border-radius: 6px; padding: 4px 8px; font: inherit; cursor: pointer; }
+  select:hover { border-color: var(--accent); }
+  .badge { display: inline-block; border-radius: 10px; padding: 1px 8px; font-size: 11px; border: 1px solid var(--line); }
+  .badge.err { border-color: var(--err); color: var(--err); }
+  .badge.ok { border-color: var(--accent); color: var(--accent); }
+  .hm { display: grid; gap: 3px; }
+  .hm .cell { width: 100%; aspect-ratio: 1; border-radius: 2px; background: var(--panel2); }
+  .hm-labels { display: grid; grid-template-columns: 28px 1fr; gap: 3px; align-items: center; }
+  .hm-hlbl { font-size: 9px; color: var(--dim); text-align: center; }
+  .hm-rowlab { font-size: 10px; color: var(--dim); text-align: right; padding-right: 6px; line-height: 1.05; }
+  .flex { display: flex; gap: 12px; flex-wrap: wrap; }
+   .flex .card { flex: 1 1 320px; min-width: 0; }
+  .hud { display: grid; grid-template-columns: 250px minmax(0, 1fr) 210px; background: var(--panel);
+         border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .hud .zone { padding: 14px 18px; min-width: 0; }
+  .hud .zone + .zone { border-left: 1px solid var(--line); }
+  .hud .l { color: var(--dim); font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; }
+  .hud .big { font-size: 34px; font-weight: 700; line-height: 1.15; margin-top: 4px; }
+  .hud .big small { font-size: 13px; color: var(--dim); font-weight: 400; }
+  .hud .sub { color: var(--dim); font-size: 12px; margin-top: 4px; }
+  .hud .chart-wrap { height: 150px; }
+  .hud .stat { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; margin-bottom: 9px; }
+  .hud .stat span { color: var(--dim); }
+  .hud .up { color: var(--accent); }
+  .hud .down { color: var(--err); }
+  @media (max-width: 900px) {
+    .hud { grid-template-columns: 1fr; }
+    .hud .zone + .zone { border-left: none; border-top: 1px solid var(--line); }
+  }
+  .dim { color: var(--dim); }
+  .errbox { font-size: 12px; color: var(--err); padding: 10px 14px; border: 1px solid var(--err);
+            border-radius: 6px; margin-bottom: 10px; display: none; }
+  /* live mode (#13): toggle + pulse dot; the dot keeps a fixed footprint
+     (transparent when off) so toggling never shifts the header */
+  .live { display: flex; align-items: center; gap: 6px; }
+  #live { padding: 4px 9px; font-size: 12px; color: var(--dim); }
+  #live[aria-pressed="true"] { color: var(--accent); border-color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  #live-dot { width: 8px; height: 8px; border-radius: 50%; background: transparent; flex: none; }
+  #live-dot.on { background: var(--accent); animation: livepulse 1.6s ease-in-out infinite; }
+  #live-dot.err { background: var(--err); animation: none; }
+  @keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) { #live-dot.on { animation: none; } }
+  .sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+        overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>opencode<span class="b">::</span>deck</h1>
+  <div class="range" id="range">
+    <button data-range="all" class="on">all</button>
+    <button data-range="7">7d</button>
+    <button data-range="30">30d</button>
+    <button data-range="90">90d</button>
+    <button data-range="custom">custom</button>
+    <input type="date" id="range-from" disabled>
+    <span class="dimsep">→</span>
+    <input type="date" id="range-to" disabled>
+  </div>
+  <div class="meta" id="meta">loading…</div>
+  <div class="spacer"></div>
+  <select id="theme" title="theme">
+    <option value="dark">dark</option>
+    <option value="light">light</option>
+    <option value="nord">nord</option>
+    <option value="dracula">dracula</option>
+    <option value="everforest">everforest</option>
+    <option value="everforest-light">everforest light</option>
+  </select>
+  <button id="refresh">↻ rescan</button>
+  <span class="live">
+    <button id="live" aria-pressed="false" title="live: auto-refresh every 30 s">live</button>
+    <span id="live-dot" aria-hidden="true"></span>
+  </span>
+  <span id="live-status" class="sr" aria-live="polite"></span>
+</header>
+<main>
+  <div class="errbox" id="errbox"></div>
+
+  <section>
+    <h2>performance hud</h2>
+    <div class="hud">
+      <div class="zone">
+        <div class="l">last completed turn</div>
+        <div class="big" id="hud-now">— <small>tok/s</small></div>
+        <div class="sub" id="hud-model"></div>
+        <div class="sub" id="hud-when"></div>
+        <div class="sub dim" id="hud-active"></div>
+      </div>
+      <div class="zone">
+        <div class="l" style="margin-bottom:8px">tok/s per turn · last 30 completed · dashed = median</div>
+        <div class="chart-wrap" id="hud-chart"><canvas id="c-hud"></canvas></div>
+      </div>
+      <div class="zone">
+        <div class="l" style="margin-bottom:8px">recent vs baseline</div>
+        <div class="stat"><span>avg last 10</span><b id="hud-avg">—</b></div>
+        <div class="stat"><span>median</span><b id="hud-med">—</b></div>
+        <div class="stat"><span>delta</span><b id="hud-delta">—</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <section>
+    <h2>insights</h2>
+    <ul class="insights" id="insights"></ul>
+  </section>
+
+  <section>
+    <h2>activity</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>tokens per day</h3>
+        <div class="so">input vs output vs reasoning vs cache-read, per local day</div>
+        <div class="chart-wrap tall"><canvas id="c-tokens"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>sessions &amp; turns per day</h3>
+        <div class="so">how much you ran, and how much it did</div>
+        <div class="chart-wrap tall"><canvas id="c-daily"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>hour × weekday</h3>
+        <div class="so">when you actually run — the night-owl pattern</div>
+        <div id="hourly"></div>
+      </div>
+      <div class="card">
+        <h3>calendar</h3>
+        <div class="so">assistant turns per day, GitHub-style</div>
+        <div id="calendar"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>agents &amp; models</h2>
+    <div class="flex">
+      <div class="card">
+        <h3>agent usage (sessions)</h3>
+        <div class="so">who is doing the running</div>
+        <div class="chart-wrap"><canvas id="c-agents"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>endpoint throughput (tok/s median)</h3>
+        <div class="so">the tuning signal — turns with ≥5 samples; excludes tool wait time</div>
+        <div class="chart-wrap"><canvas id="c-tps"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>models by tokens</h3>
+        <div class="so">top 10 endpoints eating your context</div>
+        <div class="chart-wrap"><canvas id="c-models"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>endpoint table</h3>
+      <div class="so">error rate = errored assistant turns / all turns on that endpoint</div>
+      <div id="t-models"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>tools</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>call counts (top 12)</h3>
+        <div class="so">what the agents reach for</div>
+        <div class="chart-wrap tall"><canvas id="c-tools"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>p95 latency</h3>
+        <div class="so">the ones that hang</div>
+        <div class="chart-wrap tall"><canvas id="c-lat"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>tool table</h3>
+      <div class="so">wall = total tool execution time</div>
+      <div id="t-tools"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>context health &amp; errors</h2>
+    <div class="grid3">
+      <div class="card">
+        <h3>input tokens per turn</h3>
+        <div class="so">context size distribution</div>
+        <div class="chart-wrap"><canvas id="c-cx"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>compactions</h3>
+        <div class="so">per day — when the context hit the wall</div>
+        <div class="chart-wrap"><canvas id="c-comp"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>errors</h3>
+        <div class="so">top API errors</div>
+        <div id="errors" class="dim"></div>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="card">
+        <h3>projects (tokens)</h3>
+        <div class="so">where the activity actually is</div>
+        <div class="chart-wrap"><canvas id="c-projects"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>top sessions</h3>
+        <div class="so">heaviest token burners</div>
+        <div id="t-sessions"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="margin-top:30px;color:var(--dim);font-size:11px;text-align:center">
+    read-only over opencode.db · local time · no data leaves this machine
+  </footer>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const fmtK = n => n >= 1e6 ? (n/1e6).toFixed(1)+"M" : n >= 1e3 ? (n/1e3).toFixed(1)+"k" : String(n ?? 0);
+const fmtDur = s => s == null ? "—" : s >= 3600 ? (s/3600).toFixed(1)+"h" : s >= 60 ? Math.round(s/60)+"m" : Math.round(s)+"s";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* theme state: reads the 24 per-theme CSS vars so JS stays free of color literals */
+let PALETTE = [];
+let T = {};
+function hexToRgb(h) {
+  h = h.replace("#", "");
+  if (h.length === 3) h = h.split("").map(x => x + x).join("");
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function theme() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = n => cs.getPropertyValue(n).trim();
+  T = {
+    bg: v("--bg"), panel: v("--panel"), panel2: v("--panel2"), line: v("--line"),
+    fg: v("--fg"), dim: v("--dim"), accent: v("--accent"), accent2: v("--accent2"),
+    warn: v("--warn"), err: v("--err"), purple: v("--purple"),
+    c: Array.from({ length: 12 }, (_, i) => hexToRgb(v("--c" + i))),
+    heatMin: parseFloat(v("--heat-alpha-min")) || 0.12,
+  };
+  PALETTE = T.c.map(([r, g, b]) => "rgb(" + r + "," + g + "," + b + ")");
+  Chart.defaults.color = T.dim;
+  Chart.defaults.borderColor = T.line;
+}
+const fill = (i, a) => "rgba(" + T.c[i][0] + "," + T.c[i][1] + "," + T.c[i][2] + "," + a + ")";
+Chart.defaults.font.family = 'ui-monospace, "JetBrains Mono", Consolas, monospace';
+Chart.defaults.font.size = 11;
+const charts = new Set();
+function mkChart(id, cfg) {
+  const el = document.getElementById(id);
+  if (!el || typeof Chart === "undefined") { if (el) el.closest(".card").classList.add("dim"); return; }
+  const c = new Chart(el, cfg);
+  charts.add(c);
+}
+
+// --- sortable tables ---
+// sortState is keyed by table container id: { key, type, dir }. Module-scope, so it
+// survives load()'s full re-render on the 120 s auto-refresh and the manual refresh;
+// drawTable re-applies it to every fresh payload.
+const sortState = {};
+let lastData = null;
+
+const TABLE_DEFS = {
+  "t-models": {
+    rows: d => d.models,
+    columns: [
+       { key: "label", label: "endpoint", type: "str",
+         td: m => `<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis" title="${esc(m.label)}">${esc(m.label)}</td>` },
+      { key: "sessions", label: "sessions", type: "num", num: true, render: m => m.sessions },
+      { key: "turns", label: "turns", type: "num", num: true, render: m => m.turns },
+      { key: "tokens", label: "tokens", type: "num", num: true, render: m => fmtK(m.tokens) },
+      { key: "errors", label: "errors", type: "num", num: true, render: m => m.errors },
+      { key: "error_rate", label: "err%", type: "num", num: true, render: m => (100 * m.error_rate).toFixed(0) + "%" },
+      { key: "tps_median", label: "tok/s (n)", type: "num", num: true, render: m => `${m.tps_median ?? "—"} <span class="dim">(${m.tps_samples})</span>` },
+    ],
+  },
+  "t-tools": {
+    rows: d => d.tools,
+    columns: [
+      { key: "tool", label: "tool", type: "str", render: t => esc(t.tool) + (t.errors ? ` <span class="badge err">${t.errors} err</span>` : "") },
+      { key: "calls", label: "calls", type: "num", num: true, render: t => t.calls },
+      { key: "errors", label: "errors", type: "num", num: true, render: t => t.errors },
+      { key: "error_rate", label: "err%", type: "num", num: true, render: t => (100 * t.error_rate).toFixed(0) + "%" },
+      { key: "p50_s", label: "p50 (s)", type: "num", num: true, render: t => t.p50_s ?? "—" },
+      { key: "p95_s", label: "p95 (s)", type: "num", num: true, render: t => t.p95_s ?? "—" },
+      { key: "wall_s", label: "wall", type: "num", num: true, render: t => fmtDur(t.wall_s) },
+    ],
+  },
+  "t-sessions": {
+    rows: d => d.top_sessions,
+    columns: [
+      { key: "title", label: "title", type: "str",
+        td: s => `<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis" title="${esc(s.title)}">${esc(s.title)}${s.subagent ? ' <span class="dim">sub</span>' : ""}</td>` },
+      { key: "agent", label: "agent", type: "str", render: s => esc(s.agent) },
+      { key: "model", label: "model", type: "str", cls: "dim", render: s => esc(s.model) },
+      { key: "dir", label: "dir", type: "str", cls: "dim", render: s => esc(s.dir || "") },
+      { key: "tokens", label: "tokens", type: "num", num: true, render: s => fmtK(s.tokens) },
+      { key: "turns", label: "turns", type: "num", num: true, render: s => s.turns },
+      { key: "errors", label: "err", type: "num", num: true, render: s => s.errors },
+      { key: "duration_s", label: "dur", type: "num", num: true, render: s => fmtDur(s.duration_s) },
+    ],
+  },
+};
+
+function sortRows(rows, key, type, dir) {
+  const m = dir === "asc" ? 1 : -1;
+  return rows.slice().sort((a, b) => {
+    const av = a[key], bv = b[key];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1; // nulls always last, regardless of direction
+    if (bv == null) return -1;
+    const c = type === "str" ? String(av).localeCompare(String(bv)) : av - bv;
+    return c * m;
+  });
+}
+
+function renderTable(el, columns, rows) {
+  const st = sortState[el.id];
+  const sorted = st ? sortRows(rows, st.key, st.type, st.dir) : rows;
+  const head = columns.map(c => {
+    const active = st && st.key === c.key;
+    const ind = active ? `<span class="sind">${st.dir === "asc" ? "▴" : "▾"}</span>` : "";
+    return `<th class="sortable${c.num ? " num" : ""}" data-key="${c.key}" data-type="${c.type}">${c.label}${ind}</th>`;
+  }).join("");
+  const body = sorted.map(r => `<tr>` + columns.map(c =>
+    c.td ? c.td(r) : `<td${c.num ? ' class="num"' : c.cls ? ` class="${c.cls}"` : ""}>${c.render(r)}</td>`
+  ).join("") + `</tr>`).join("");
+   el.innerHTML = `<div class="tscroll"><table><tr>${head}</tr>${body}</table></div>`;
+}
+
+function drawTable(id) {
+  const def = TABLE_DEFS[id];
+  renderTable(document.getElementById(id), def.columns, def.rows(lastData));
+}
+
+for (const id in TABLE_DEFS) {
+  document.getElementById(id).addEventListener("click", e => {
+    const th = e.target.closest("th.sortable");
+    if (!th) return;
+    const key = th.dataset.key, type = th.dataset.type;
+    const st = sortState[id] || (sortState[id] = {});
+    st.type = type;
+    if (st.key === key) st.dir = st.dir === "asc" ? "desc" : "asc";
+    else { st.key = key; st.dir = type === "str" ? "asc" : "desc"; }
+    drawTable(id);
+  });
+}
+
+function renderKpis(d) {
+  const allTime = rangeState.mode === "all";
+  const scope = allTime ? "lifetime" : "in window";
+  const week = d.daily.slice(-7).reduce((a, r) => a + (r.turns || 0), 0);
+  const cards = [
+    [d.n_sessions, "sessions", "+" + d.daily.slice(-7).reduce((a, r) => a + (r.sessions || 0), 0) + " last 7d"],
+    [d.n_turns, "assistant turns", "+" + week + " last 7d"],
+    [d.n_subagents, "subagent spawns", (d.n_sessions ? Math.round(100 * d.n_subagents / d.n_sessions) : 0) + "% of sessions"],
+    [fmtK(d.total_tokens), "tokens total", scope + " · in " + fmtK(d.total_in) + " · out " + fmtK(d.total_out)],
+    [d.streaks.current, "streak (days)", "longest " + d.streaks.longest],
+    [d.median_turn_s ?? "—", "median turn (s)", d.median_tps ? "~" + d.median_tps + " tok/s median" : ""],
+    [d.api_errors, "API errors", allTime ? "across all turns" : "within this window"],
+    [d.context.compactions_total, "compactions", d.context.compactions_14d + " in last 14d"],
+  ];
+  $("#kpis").innerHTML = cards.map(([v, l, s]) =>
+    `<div class="kpi"><div class="v">${v} <small>${esc(s || "")}</small></div><div class="l">${l}</div></div>`).join("");
+}
+
+function renderInsights(d) {
+  $("#insights").innerHTML = (d.insights || []).map(i => `<li>${esc(i)}</li>`).join("");
+}
+
+function renderTokens(d) {
+  const labels = d.daily.map(r => r.date.slice(5));
+  mkChart("c-tokens", {
+    type: "line",
+    data: { labels, datasets: [
+      { label: "input", data: d.daily.map(r => r.in), backgroundColor: fill(0, .25), borderColor: T.accent, fill: true, tension: .25, pointRadius: 0 },
+      { label: "output", data: d.daily.map(r => r.out), backgroundColor: fill(1, .3), borderColor: T.accent2, fill: true, tension: .25, pointRadius: 0 },
+      { label: "reasoning", data: d.daily.map(r => r.reason), backgroundColor: fill(2, .3), borderColor: T.purple, fill: true, tension: .25, pointRadius: 0 },
+      { label: "cache-read", data: d.daily.map(r => r.cache), backgroundColor: fill(3, .25), borderColor: T.warn, fill: true, tension: .25, pointRadius: 0 },
+    ]},
+    options: { maintainAspectRatio: false, plugins: { legend: { position: "bottom" },
+      tooltip: { callbacks: { label: c => c.dataset.label + ": " + fmtK(c.parsed.y) } } },
+      scales: { x: { stacked: true, ticks: { maxTicksLimit: 15 } }, y: { stacked: true, ticks: { callback: v => fmtK(v) } } } },
+  });
+  mkChart("c-daily", {
+    type: "bar",
+    data: { labels, datasets: [
+      { label: "turns", data: d.daily.map(r => r.turns), backgroundColor: fill(0, .6) },
+      { label: "sessions", data: d.daily.map(r => r.sessions), backgroundColor: fill(1, .6) },
+    ]},
+    options: { maintainAspectRatio: false, plugins: { legend: { position: "bottom" } },
+      scales: { x: { stacked: true, ticks: { maxTicksLimit: 15 } }, y: { stacked: true } } },
+  });
+}
+
+function heatColor(v, max) {
+  if (!v) return "var(--panel2)";
+  const t = Math.sqrt(v / (max || 1));
+  return fill(0, +(T.heatMin + (1 - T.heatMin) * t).toFixed(2));
+}
+
+function renderHourly(d) {
+  const max = Math.max(...d.hourly.flat(), 1);
+  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  let html = `<div style="display:grid;grid-template-columns:28px 1fr;gap:3px">`;
+  html += `<div></div><div style="display:grid;grid-template-columns:repeat(24,1fr);gap:3px">`;
+  for (let h = 0; h < 24; h++) html += `<span class="hm-hlbl">${h % 3 === 0 ? h : ""}</span>`;
+  html += `</div>`;
+  d.hourly.forEach((row, w) => {
+    html += `<div class="hm-rowlab">${days[w]}</div>`;
+    html += `<div style="display:grid;grid-template-columns:repeat(24,1fr);gap:3px">`;
+    row.forEach((v, h) => {
+      html += v ? `<div class="cell" title="${days[w]} ${h}:00 — ${v} turns" style="background:${heatColor(v, max)}"></div>`
+                : `<div class="cell"></div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  $("#hourly").innerHTML = html;
+}
+
+function renderCalendar(d) {
+  const cal = d.calendar || {};
+  const max = Math.max(...Object.values(cal), 1);
+  const parseDay = s => { const p = s.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+  const midnight = x => { const v = new Date(x); v.setHours(0, 0, 0, 0); return v; };
+  const mondayOf = x => { const v = midnight(x); v.setDate(v.getDate() - ((v.getDay() + 6) % 7)); return v; };
+  const today = midnight(new Date());
+  // Window follows the active range (#7): all = last 12 weeks ending this week,
+  // n-day = the trailing n days, custom = from..min(to, today); incomplete custom
+  // falls back to the all-time window (the server does the same). No data exists
+  // past today, so the window end is clamped there and later cells render dim.
+  let start, end = new Date(today);
+  if (rangeState.mode === "custom" && rangeState.from && rangeState.to) {
+    const to = parseDay(rangeState.to);
+    end = to < today ? midnight(to) : new Date(today);
+    start = parseDay(rangeState.from);
+    if (start > end) start = new Date(end);
+  } else if (rangeState.mode === "all" || rangeState.mode === "custom") {
+    start = mondayOf(today);
+    start.setDate(start.getDate() - 77); // 12 columns ending this week
+  } else {
+    const n = parseInt(rangeState.mode, 10);
+    start = new Date(today);
+    start.setDate(start.getDate() - ((n >= 1 ? n : 84) - 1));
+  }
+  const first = mondayOf(start);
+  let raw = 0;
+  for (const t = new Date(first); t <= mondayOf(end); t.setDate(t.getDate() + 7)) raw++;
+  let weeks = Math.max(1, Math.min(raw, 26)); // cap wide custom windows at 26 cols
+  if (raw > 26) first.setDate(first.getDate() + (raw - 26) * 7); // drop oldest cols
+  let html = '<div class="hm" style="grid-template-rows:repeat(7,1fr);grid-template-columns:repeat(' + weeks + ',1fr);gap:3px;max-width:' + Math.min(440, weeks * 16) + 'px">';
+  for (let w = 0; w < weeks; w++) {          // left = oldest week
+    for (let r = 0; r < 7; r++) {              // top = Monday
+      const dt = new Date(first);
+      dt.setDate(dt.getDate() + w * 7 + r);
+      if (dt > end) { html += '<div class="cell" style="opacity:.15"></div>'; continue; }
+      const key = [dt.getFullYear(), String(dt.getMonth() + 1).padStart(2, "0"), String(dt.getDate()).padStart(2, "0")].join("-");
+      const v = cal[key] || 0;
+      html += `<div class="cell" title="${key} — ${v} turns" style="${v ? "background:" + heatColor(v, max) : ""}"></div>`;
+    }
+  }
+  html += "</div>";
+  $("#calendar").innerHTML = html;
+}
+
+function renderAgents(d) {
+  mkChart("c-agents", {
+    type: "doughnut",
+    data: { labels: d.agents.map(a => a.agent), datasets: [{ data: d.agents.map(a => a.sessions), backgroundColor: PALETTE, borderWidth: 1, borderColor: T.bg }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { position: "right" } } },
+  });
+  const ms = d.models.slice(0, 10).reverse();
+  mkChart("c-models", {
+    type: "bar",
+    data: { labels: ms.map(m => m.label), datasets: [{ label: "tokens", data: ms.map(m => m.tokens), backgroundColor: fill(1, .55) }] },
+    options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => fmtK(c.parsed.x) + " tokens" } } }, scales: { x: { ticks: { callback: v => fmtK(v) } } } },
+  });
+  const tps = d.models.filter(m => m.tps_samples >= 5).sort((a, b) => b.tps_median - a.tps_median).slice(0, 10).reverse();
+  mkChart("c-tps", {
+    type: "bar",
+    data: { labels: tps.map(m => m.label), datasets: [{ label: "tok/s median", data: tps.map(m => m.tps_median), backgroundColor: fill(0, .55) }] },
+    options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  });
+  drawTable("t-models");
+}
+
+function renderTools(d) {
+  const top = d.tools.slice(0, 12).reverse();
+  mkChart("c-tools", {
+    type: "bar",
+    data: { labels: top.map(t => t.tool), datasets: [{ label: "calls", data: top.map(t => t.calls), backgroundColor: fill(2, .55) }] },
+    options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => c.parsed.x + " calls" } } } },
+  });
+  const lat = d.tools.filter(t => t.p95_s != null).sort((a, b) => b.p95_s - a.p95_s).slice(0, 10).reverse();
+  mkChart("c-lat", {
+    type: "bar",
+    data: { labels: lat.map(t => t.tool), datasets: [{ label: "p95 (s)", data: lat.map(t => t.p95_s), backgroundColor: fill(3, .55) }] },
+    options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  });
+  drawTable("t-tools");
+}
+
+function renderContext(d) {
+  const cx = d.context;
+  mkChart("c-cx", {
+    type: "bar",
+    data: { labels: cx.histogram.bins, datasets: [{ label: "turns", data: cx.histogram.values, backgroundColor: fill(0, .5) }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+      tooltip: { callbacks: { title: items => "input tokens " + items[0].label } } } },
+  });
+  mkChart("c-comp", {
+    type: "bar",
+    data: { labels: d.daily.map(r => r.date.slice(5)), datasets: [{ label: "compactions", data: d.daily.map(r => r.compactions), backgroundColor: fill(4, .6) }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 15 } } } },
+  });
+  const errs = d.api_errors_top || [];
+  $("#errors").innerHTML = errs.length
+    ? errs.map(e => `<div style="display:flex;gap:8px;margin-bottom:6px"><span class="badge err">${e.count}</span><span>${esc(e.error)}</span></div>`).join("") +
+      `<div class="dim" style="margin-top:8px">context rot: ${cx.bloat_pct}% of turns ≥64k input · compactions: ${cx.compactions_total} total (${cx.compactions_14d} / 14d vs ${cx.compactions_prev_14d} prior)</div>`
+    : "<div>no API errors — clean</div>";
+  const pr = d.projects.slice(0, 8).reverse();
+  mkChart("c-projects", {
+    type: "bar",
+    data: { labels: pr.map(p => (p.dir || "").split("/").pop() || p.dir), datasets: [{ label: "tokens", data: pr.map(p => p.tokens), backgroundColor: fill(3, .5) }] },
+    options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => fmtK(c.parsed.x) + " tokens" } } }, scales: { x: { ticks: { callback: v => fmtK(v) } } } },
+  });
+  drawTable("t-sessions");
+}
+
+// --- date range knob -----------------------------------------------------------
+// Module-scope so it survives the 120 s auto-refresh and manual rescans.
+// mode: "all" | "7" | "30" | "90" | "custom" (| any other positive int from the URL).
+const rangeState = { mode: "all", from: "", to: "" };
+function rangeQuery() {
+  if (rangeState.mode === "all") return "";
+  if (rangeState.mode === "custom")
+    return (rangeState.from && rangeState.to) ? `from=${rangeState.from}&to=${rangeState.to}` : "";
+  return `days=${rangeState.mode}`;
+}
+function rangeLabel() {
+  if (rangeState.mode === "all") return "all time";
+  if (rangeState.mode === "custom")
+    return (rangeState.from && rangeState.to) ? `${rangeState.from} → ${rangeState.to}` : "custom (incomplete)";
+  return `last ${rangeState.mode}d`;
+}
+function setRange(mode, from, to, doLoad = true) {
+  rangeState.mode = mode;
+  if (from) rangeState.from = from;
+  if (to) rangeState.to = to;
+  document.querySelectorAll("#range button").forEach(b => b.classList.toggle("on", b.dataset.range === mode));
+  $("#range-from").disabled = mode !== "custom";
+  $("#range-to").disabled = mode !== "custom";
+  const q = rangeQuery();
+  history.replaceState(null, "", q ? "?" + q : location.pathname);
+  if (doLoad) load(true);  // manual: always renders
+}
+function initRange() {
+  const p = new URLSearchParams(location.search);
+  const days = p.get("days"), from = p.get("from"), to = p.get("to");
+  if (from && to) setRange("custom", from, to, false);
+  else if (days && /^\d+$/.test(days) && +days >= 1) setRange(days, undefined, undefined, false);
+  $("#range-from").value = rangeState.from;
+  $("#range-to").value = rangeState.to;
+  document.querySelectorAll("#range button").forEach(b => {
+    b.onclick = () => {
+      if (b.dataset.range === "custom") {
+        const n = new Date();
+        const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+        if (!rangeState.from) rangeState.from = iso(new Date(n - 6 * 86400000));
+        if (!rangeState.to) rangeState.to = iso(n);
+        $("#range-from").value = rangeState.from;
+        $("#range-to").value = rangeState.to;
+      }
+      setRange(b.dataset.range);
+    };
+  });
+  $("#range-from").onchange = e => { if (e.target.value) setRange("custom", e.target.value, rangeState.to ? undefined : e.target.value, !!rangeQuery()); };
+  $("#range-to").onchange = e => { if (e.target.value) setRange("custom", rangeState.from ? undefined : e.target.value, e.target.value, !!rangeQuery()); };
+}
+
+function renderHud(d) {
+  const r = (d.recent_tps || []).slice(-30);
+  const last = r[r.length - 1];
+  if (last) {
+    $("#hud-now").innerHTML = last.tps.toFixed(1) + " <small>tok/s</small>";
+    $("#hud-model").textContent = last.end + " · " + fmtK(last.out) + " out · " + last.dur + "s";
+    $("#hud-when").textContent = "completed " + fmtDur((Date.now() - last.ts) / 1000) + " ago";
+  } else {
+    $("#hud-now").innerHTML = "— <small>tok/s</small>";
+    $("#hud-model").textContent = "";
+    $("#hud-when").textContent = "no completed turns with output";
+  }
+  const ip = d.recent_in_progress;
+  $("#hud-active").textContent = ip
+    ? "in progress: " + ip.end + " for " + fmtDur((Date.now() - ip.started) / 1000)
+    : "";
+  const avg = d.recent_tps_avg10, med = d.median_tps;
+  $("#hud-avg").textContent = avg != null ? avg.toFixed(1) : "—";
+  $("#hud-med").textContent = med != null ? med.toFixed(1) : "—";
+  const de = $("#hud-delta");
+  if (avg != null && med) {
+    const pct = 100 * (avg - med) / med;
+    de.textContent = (pct >= 0 ? "+" : "") + pct.toFixed(0) + "%";
+    de.className = pct >= 0 ? "up" : "down";
+  } else { de.textContent = "—"; de.className = ""; }
+  const wrap = $("#hud-chart");
+  wrap.innerHTML = "<canvas id='c-hud'></canvas>";
+  if (r.length >= 2) {
+    const hh = x => String(new Date(x).getHours()).padStart(2, "0") + ":" + String(new Date(x).getMinutes()).padStart(2, "0");
+    const ds = [
+      { label: "tok/s", data: r.map(x => x.tps), borderColor: T.accent,
+        backgroundColor: fill(0, .15), fill: true, tension: .25,
+        pointRadius: 2, pointHoverRadius: 4, borderWidth: 1.5 },
+    ];
+    if (med != null) ds.push({ label: "median", data: r.map(() => med),
+      borderColor: "rgba(" + hexToRgb(T.dim).join(",") + ",.8)", borderDash: [5, 4], pointRadius: 0, borderWidth: 1, fill: false });
+    mkChart("c-hud", {
+      type: "line",
+      data: { labels: r.map(x => hh(x.ts)), datasets: ds },
+      options: {
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            filter: i => i.datasetIndex === 0,
+            callbacks: {
+              title: items => new Date(r[items[0].dataIndex].ts).toLocaleString(),
+              label: c => c.parsed.y.toFixed(1) + " tok/s",
+            },
+          },
+        },
+        scales: { x: { ticks: { maxTicksLimit: 8, maxRotation: 0 } }, y: { beginAtZero: true } },
+      },
+    });
+  } else {
+    const el = document.createElement("div");
+    el.className = "dim";
+    el.style.cssText = "display:flex;align-items:center;justify-content:center;height:100%";
+    el.textContent = "need ≥2 completed turns to plot a trend";
+    wrap.appendChild(el);
+  }
+}
+
+function renderAll(d) {
+  charts.forEach(c => c.destroy()); charts.clear();
+  renderHud(d);
+  renderKpis(d);
+  renderInsights(d);
+  renderTokens(d);
+  renderHourly(d);
+  renderCalendar(d);
+  renderAgents(d);
+  renderTools(d);
+  renderContext(d);
+}
+// Render gate (#13): `manual` = user-triggered (first load, range change,
+// rescan button) — always renders. Auto polls (live 30 s, background 120 s)
+// come back with the server's raw_scan_ts; one matching the last-seen stamp
+// means no rescan happened, so the whole re-render is skipped (no DOM churn).
+async function load(manual = false) {
+  try {
+    const q = rangeQuery();
+    const r = await fetch("/api/all" + (q ? "?" + q : ""));
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || r.status);
+    const skip = !manual && d.raw_scan_ts === lastRawTs;
+    if (typeof d.raw_scan_ts === "number") lastRawTs = d.raw_scan_ts;
+    clearLiveError();  // a 200 (even a skipped one) silently recovers
+    if (!skip) {
+      lastData = d;
+      renderAll(d);
+      const h = await (await fetch("/api/health")).json();
+      const toolCalls = d.tools.reduce((a, t) => a + (t.calls || 0), 0);
+      $("#meta").textContent = `${rangeLabel()} · ${d.n_sessions} sessions / ${d.n_turns} turns / ${toolCalls} tool calls · scan ${h.scan_ms}ms · cache ${Math.round(h.cache_age_s)}s old`;
+      $("#errbox").style.display = "none";
+    }
+  } catch (e) {
+    if (liveOn) {
+      // keep the last rendered data; the dot turns red; the timer keeps running
+      setLiveError();
+    } else {
+      $("#errbox").style.display = "block";
+      $("#errbox").textContent = "failed to load data: " + e.message;
+      $("#meta").textContent = "error";
+    }
+  }
+}
+
+// --- live mode (#13): optional 30 s auto-refresh ----------------------------
+// State persists under `deck-live` (same pattern as the theme). When restored
+// or toggled on: fetch once immediately, then poll every 30 s. When off the
+// live interval is cleared (the 120 s background poll is a separate feature).
+// Poll failures turn the dot red with the last rendered data kept; the next
+// 200 clears it silently.
+const LIVE_KEY = "deck-live";
+const LIVE_MS = 30000;
+let liveOn = false;
+let liveTimer = null;
+let liveError = false;
+let lastRawTs = null;  // last raw_scan_ts seen in a /api/all response
+const liveDot = $("#live-dot");
+
+function paintLive() {
+  $("#live").setAttribute("aria-pressed", String(liveOn));
+  liveDot.classList.toggle("on", liveOn && !liveError);
+  liveDot.classList.toggle("err", liveError);
+  liveDot.title = liveError ? "connection error — retrying"
+                  : liveOn ? "live: auto-refresh every 30 s"
+                  : "live: auto-refresh off";
+  $("#live-status").textContent = liveError ? "connection error, retrying"
+                            : liveOn ? "live auto-refresh on"
+                            : "live auto-refresh off";
+}
+function setLiveError() {
+  if (liveError) return;
+  liveError = true;
+  paintLive();
+}
+function clearLiveError() {
+  if (!liveError) return;
+  liveError = false;
+  paintLive();
+}
+function startLive() {
+  if (liveTimer) clearInterval(liveTimer);
+  liveOn = true;
+  clearLiveError();
+  paintLive();
+  localStorage.setItem(LIVE_KEY, "1");
+  load(true);  // immediate fetch on enable
+  liveTimer = setInterval(() => load(false), LIVE_MS);
+}
+function stopLive() {
+  if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+  liveOn = false;
+  clearLiveError();
+  paintLive();
+  localStorage.setItem(LIVE_KEY, "0");
+}
+$("#live").addEventListener("click", () => (liveOn ? stopLive() : startLive()));
+function initLive() {
+  // restore before the first render (same pattern as initTheme)
+  liveOn = localStorage.getItem(LIVE_KEY) === "1";
+  if (liveOn) liveTimer = setInterval(() => load(false), LIVE_MS);
+  paintLive();
+}
+
+const THEME_KEY = "opencode-deck-theme";
+const THEME_IDS = ["dark", "light", "nord", "dracula", "everforest", "everforest-light"];
+function systemTheme() { return matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; }
+function applyTheme(id) {
+  document.documentElement.dataset.theme = id;
+  theme();
+  if (lastData) renderAll(lastData);
+}
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  const current = THEME_IDS.includes(saved) ? saved : systemTheme();
+  $("#theme").value = current;
+  applyTheme(current);
+}
+$("#theme").addEventListener("change", e => {
+  localStorage.setItem(THEME_KEY, e.target.value);
+  applyTheme(e.target.value);
+});
+
+$("#refresh").onclick = async () => {
+  $("#refresh").disabled = true;
+  try {
+    const r = await fetch("/api/refresh", { method: "POST" });
+    await r.json();
+    await load(true);  // manual: always renders
+  } finally { $("#refresh").disabled = false; }
+};
+
+initTheme();
+initRange();
+initLive();  // restores `deck-live` and starts the 30 s poll before first render
+load(true);
+setInterval(() => load(false), 120000);  // background poll; gated on raw_scan_ts like the live poll
+</script>
+</body>
+</html>
