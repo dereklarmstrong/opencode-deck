@@ -1,0 +1,465 @@
+{
+ "agents": [
+  {
+   "agent": "build",
+   "errors": 0,
+   "sessions": 3,
+   "subagents": 0,
+   "tokens": 455550,
+   "turns": 7
+  },
+  {
+   "agent": "general",
+   "errors": 0,
+   "sessions": 1,
+   "subagents": 1,
+   "tokens": 80600,
+   "turns": 1
+  },
+  {
+   "agent": "Assistant",
+   "errors": 1,
+   "sessions": 1,
+   "subagents": 0,
+   "tokens": 81750,
+   "turns": 3
+  }
+ ],
+ "api_errors": 1,
+ "api_errors_top": [
+  {
+   "count": 1,
+   "error": "APIError 404 192.0.2.42:4242"
+  }
+ ],
+ "calendar": {
+  "2026-07-20": 4,
+  "2026-07-21": 3,
+  "2026-08-01": 3,
+  "2026-08-27": 1
+ },
+ "context": {
+  "bloat_pct": 18.2,
+  "compactions_14d": 0,
+  "compactions_prev_14d": 0,
+  "compactions_total": 0,
+  "histogram": {
+   "bins": [
+    "0k-8k",
+    "8k-16k",
+    "16k-32k",
+    "32k-64k",
+    "64k-128k",
+    "128k+"
+   ],
+   "values": [
+    2,
+    3,
+    2,
+    2,
+    2,
+    0
+   ]
+  }
+ },
+ "daily": [
+  {
+   "cache": 180000,
+   "compactions": 0,
+   "date": "2026-07-20",
+   "in": 73000,
+   "out": 1260,
+   "reason": 200,
+   "sessions": 2,
+   "turns": 4
+  },
+  {
+   "cache": 100,
+   "compactions": 0,
+   "date": "2026-07-21",
+   "in": 101000,
+   "out": 315,
+   "reason": 0,
+   "sessions": 1,
+   "turns": 3
+  },
+  {
+   "cache": 200000,
+   "compactions": 0,
+   "date": "2026-08-01",
+   "in": 165000,
+   "out": 1800,
+   "reason": 0,
+   "sessions": 1,
+   "turns": 3
+  },
+  {
+   "cache": 20000,
+   "compactions": 0,
+   "date": "2026-08-27",
+   "in": 12000,
+   "out": 90,
+   "reason": 0,
+   "sessions": 1,
+   "turns": 1
+  }
+ ],
+ "db": "<db>",
+ "hourly": [
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   4,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   3,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1,
+   1,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ ],
+ "insights": [
+  "Night-owl score 36% \u2014 share of turns between 9pm and 2am.",
+  "Delegation rate 20% \u2014 1 of 5 sessions are subagent spawns.",
+  "Context rot 18% \u2014 turns running with 64k+ input tokens. Context usage looks manageable.",
+  "Fastest endpoint: test-27b @ vader \u2014 20 tok/s median over 5 turns.",
+  "API errors: 1 failed turn \u2014 most common: APIError (100% of errors).",
+  "bash ate 98% of all tool wall-time (0.0 h).",
+  "Peak hours: on Monday around 21:00 local time.",
+  "Longest turn: 1.0 h in Golden writing.",
+  "Heaviest session: Golden blog \u2014 324k tokens over 3 turns."
+ ],
+ "median_tps": 20.0,
+ "median_turn_s": 15.0,
+ "models": [
+  {
+   "error_rate": 0.0,
+   "errors": 0,
+   "label": "test-27b @ vader",
+   "model": "test-27b",
+   "provider": "vader",
+   "sessions": 3,
+   "tokens": 495600,
+   "tps_median": 20.0,
+   "tps_samples": 5,
+   "turns": 7
+  },
+  {
+   "error_rate": 0.25,
+   "errors": 1,
+   "label": "gpt-x @ openai",
+   "model": "gpt-x",
+   "provider": "openai",
+   "sessions": 2,
+   "tokens": 122300,
+   "tps_median": 31.5,
+   "tps_samples": 2,
+   "turns": 4
+  }
+ ],
+ "n_sessions": 5,
+ "n_subagents": 1,
+ "n_turns": 11,
+ "projects": [
+  {
+   "dir": "/home/derek/blog",
+   "sessions": 2,
+   "tokens": 404400
+  },
+  {
+   "dir": "/home/derek/writing",
+   "sessions": 2,
+   "tokens": 131750
+  },
+  {
+   "dir": "/home/derek/projects",
+   "sessions": 1,
+   "tokens": 81750
+  }
+ ],
+ "scan_rows": {
+  "sessions": 5,
+  "tool_parts": 6,
+  "turns": 11
+ },
+ "streaks": {
+  "current": 0,
+  "longest": 2
+ },
+ "tools": [
+  {
+   "calls": 3,
+   "error_rate": 0.0,
+   "errors": 0,
+   "p50_s": 3.0,
+   "p95_s": 60.0,
+   "tool": "bash",
+   "wall_s": 65.0
+  },
+  {
+   "calls": 1,
+   "error_rate": 0.0,
+   "errors": 0,
+   "p50_s": 1.5,
+   "p95_s": 1.5,
+   "tool": "read",
+   "wall_s": 1.5
+  },
+  {
+   "calls": 1,
+   "error_rate": 1.0,
+   "errors": 1,
+   "p50_s": null,
+   "p95_s": null,
+   "tool": "webfetch",
+   "wall_s": 0.0
+  },
+  {
+   "calls": 1,
+   "error_rate": 0.0,
+   "errors": 0,
+   "p50_s": null,
+   "p95_s": null,
+   "tool": "glob",
+   "wall_s": 0.0
+  }
+ ],
+ "top_sessions": [
+  {
+   "agent": "build",
+   "dir": "blog",
+   "duration_s": 2400,
+   "errors": 0,
+   "id": "s1",
+   "model": "test-27b",
+   "subagent": 0,
+   "title": "Golden blog",
+   "tokens": 323800,
+   "turns": 3
+  },
+  {
+   "agent": "build",
+   "dir": "writing",
+   "duration_s": 18000,
+   "errors": 0,
+   "id": "s4",
+   "model": "test-27b",
+   "subagent": 0,
+   "title": "Golden writing",
+   "tokens": 91200,
+   "turns": 3
+  },
+  {
+   "agent": "Assistant",
+   "dir": "projects",
+   "duration_s": 1800,
+   "errors": 1,
+   "id": "s3",
+   "model": "gpt-x",
+   "subagent": 0,
+   "title": "Golden project",
+   "tokens": 81750,
+   "turns": 3
+  },
+  {
+   "agent": "general",
+   "dir": "blog",
+   "duration_s": 600,
+   "errors": 0,
+   "id": "s2",
+   "model": "test-27b",
+   "subagent": 1,
+   "title": "Golden subagent",
+   "tokens": 80600,
+   "turns": 1
+  },
+  {
+   "agent": "build",
+   "dir": "writing",
+   "duration_s": 300,
+   "errors": 0,
+   "id": "s5",
+   "model": "gpt-x",
+   "subagent": 0,
+   "title": "Golden recent",
+   "tokens": 40550,
+   "turns": 1
+  }
+ ],
+ "total_cache_r": 400100,
+ "total_in": 351000,
+ "total_out": 3465,
+ "total_reason": 200,
+ "total_tokens": 617900
+}

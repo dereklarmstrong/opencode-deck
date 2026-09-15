@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, "pr-*", "gh-pr/*" ]
+    tags: [ "v*" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build wheel
+        run: python -m pip wheel . --no-deps -w dist
+      - name: Install into clean venv + smoke
+        run: |
+          python -m venv clean
+          clean/bin/pip install --no-index --find-links=dist opencode-deck
+          python -c "import sys; sys.path.insert(0, 'tests'); from test_api import build_fixture; build_fixture('smoke.db')"
+          (clean/bin/opencode-deck --db smoke.db --port 8899 >/dev/null 2>&1 &)
+          sleep 2
+          curl -fsS http://127.0.0.1:8899/api/health || exit 1
+          curl -fsS http://127.0.0.1:8899/api/all | python -c "import json,sys; d=json.load(sys.stdin); assert 'daily' in d" || exit 1
+          echo "install smoke OK"
+
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secret / forbidden-file gate (fail-closed)
+        # HEAD, not $GITEA_REF: checkout leaves a detached shallow repo where
+        # neither refs/heads/* nor (on dispatch) GITEA_REF resolves. Same ref
+        # the local pre-push hook gates on.
+        run: bash publish.sh --gate HEAD
